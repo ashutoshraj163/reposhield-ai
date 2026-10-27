@@ -1,0 +1,22 @@
+RepoShield AI
+
+An open-source AI-assisted code security reviewer
+powered by the BharatCode model API.
+
+AI provider: BharatCode
+Model: qwen-3.8-27b
+
+Purpose:
+Help developers understand and remediate code
+security findings using scanner evidence and AI.
+
+Core workflow:
+Scan -> Explain -> Propose Patch -> Verify
+
+Repository: https://github.com/ashutoshraj163/reposhield-ai
+
+API credentials are provided through server-side
+environment variables and must never be committed.
+
+This project assists defensive security review.
+It does not guarantee that code is vulnerability-free.

@@ -1,0 +1,12 @@
+.venv*/
+.tools/
+__pycache__/
+.pytest_cache/
+.env
+*.pyc
+.DS_Store
+scan_workspace/
+*.egg-info/
+dist/
+.semgrep/
+node_modules/
