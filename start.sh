@@ -71,7 +71,7 @@ echo ""
 
 # Start backend
 PYTHONPATH="$BACKEND" "$BACKEND/.venv/bin/uvicorn" main:app \
-  --app-dir "$BACKEND" --port 8000 --log-level warning &
+  --app-dir "$BACKEND" --host 0.0.0.0 --port 8000 --log-level info &
 BACKEND_PID=$!
 
 # Start frontend
