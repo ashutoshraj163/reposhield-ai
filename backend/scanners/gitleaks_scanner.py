@@ -86,6 +86,7 @@ def _normalize(raw: dict, scan_root: Path) -> Finding:
         category="secrets",
         severity="high",
         file=rel,
+        abs_path=file_path,
         line=line_num,
         message=f"{description} — rule: {rule_id}",
         code_excerpt=excerpt,

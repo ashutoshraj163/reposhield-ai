@@ -36,4 +36,4 @@ def connect_db():
 
 
 DB_PASSWORD = "supersecret123"
-API_KEY = "sk-prod-abcdef1234567890"
+API_KEY = "sk-EXAMPLE-notarealkey-0000000000"  # intentional fixture secret

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 
 
@@ -7,12 +7,26 @@ class Finding(BaseModel):
     rule_id: str
     category: str
     severity: Literal["critical", "high", "medium", "low", "info"]
-    file: str
+    file: str          # relative display path
+    abs_path: str = "" # absolute path for diff/verify operations
     line: int
     message: str
     code_excerpt: str
     source: str
     status: Literal["open", "resolved", "verified"] = "open"
+
+
+class AIExplanation(BaseModel):
+    summary: str
+    impact: str
+    confidence: Literal["low", "medium", "high"]
+    remediation: str
+    patch: str | None = None
+    verification_steps: list[str] = Field(default_factory=list)
+    beginner_tip: str | None = None
+    hinglish_summary: str | None = None
+    ai_model: str = ""
+    fallback: bool = False
 
 
 class ScanSummary(BaseModel):

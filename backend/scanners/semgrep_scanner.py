@@ -21,9 +21,12 @@ SCAN_TIMEOUT_SECS = 60
 
 
 def _semgrep_bin() -> str:
+    # Docker sets SEMGREP_BIN to /opt/semgrep-venv/bin/semgrep
+    env_bin = os.environ.get("SEMGREP_BIN", "")
+    if env_bin and Path(env_bin).exists():
+        return env_bin
     if _SEMGREP_BIN.exists():
         return str(_SEMGREP_BIN)
-    # Fall back to PATH
     return "semgrep"
 
 
@@ -101,6 +104,7 @@ def _normalize(raw: dict, scan_root: Path) -> Finding:
         category=category,
         severity=severity,
         file=file_path,
+        abs_path=abs_path,
         line=line_num,
         message=extra.get("message", "")[:500],
         code_excerpt=excerpt,

@@ -7,7 +7,7 @@ AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
 AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 # Generic GitHub token placeholder
-GITHUB_TOKEN = "ghp_16C7e42F292c6912E7710c838347Ae298V5"
+GITHUB_TOKEN = "ghp_EXAMPLE_notarealtoken_0000000000000000000"  # intentional fixture secret
 
 # Database connection with hardcoded password
 DATABASE_URL = "postgresql://admin:password123@prod-db.example.com:5432/myapp"

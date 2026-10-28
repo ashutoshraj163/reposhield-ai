@@ -1,13 +1,27 @@
+import re
 import shutil
+import subprocess
 import tempfile
 import uuid
 import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
+from pydantic import BaseModel
 
+import store
 from scanners.runner import run_all
 from schemas import ScanResult
+
+# Only accept github.com to prevent SSRF
+_GITHUB_URL_RE = re.compile(
+    r'^https://github\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+'
+    r'(?:\.git)?(?:/tree/[a-zA-Z0-9_./%-]+)?$'
+)
+
+
+class GithubRequest(BaseModel):
+    url: str
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
 
@@ -22,13 +36,15 @@ def scan_demo() -> ScanResult:
         raise HTTPException(status_code=500, detail="Demo directory not found")
 
     findings, errors = run_all(DEMO_DIR)
-    return ScanResult(
+    result = ScanResult(
         scan_id=f"demo-{uuid.uuid4().hex[:8]}",
         target="demo/",
         scanner="semgrep+gitleaks+osv",
         findings=findings,
         error="; ".join(errors) if errors else None,
     )
+    store.save_scan(result)
+    return result
 
 
 @router.post("/upload")
@@ -58,17 +74,71 @@ async def scan_upload(file: UploadFile) -> ScanResult:
             target.write_bytes(content)
 
         findings, errors = run_all(target)
-        return ScanResult(
+        result = ScanResult(
             scan_id=scan_id,
             target=filename,
             scanner="semgrep+gitleaks+osv",
             findings=findings,
             error="; ".join(errors) if errors else None,
         )
+        store.save_scan(result)
+        return result
     except Exception as e:
         return ScanResult(
             scan_id=scan_id,
             target=file.filename or "upload",
+            scanner="semgrep+gitleaks+osv",
+            findings=[],
+            error=str(e)[:300],
+        )
+    finally:
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
+@router.post("/github")
+async def scan_github(req: GithubRequest) -> ScanResult:
+    """
+    Clone a public GitHub repo (shallow) and scan it.
+    Only github.com URLs accepted to prevent SSRF.
+    """
+    url = req.url.strip().rstrip("/")
+    if not _GITHUB_URL_RE.match(url):
+        raise HTTPException(
+            status_code=422,
+            detail="Only public github.com repository URLs are accepted.",
+        )
+
+    # Normalise to bare repo URL for cloning
+    clone_url = url.split("/tree/")[0]
+    if not clone_url.endswith(".git"):
+        clone_url += ".git"
+
+    repo_name = clone_url.rstrip(".git").split("/")[-1]
+    scan_id = f"scan-{uuid.uuid4().hex[:8]}"
+    work_dir = Path(tempfile.mkdtemp(prefix="reposhield_"))
+
+    try:
+        result = subprocess.run(
+            ["git", "clone", "--depth=1", "--single-branch", clone_url, str(work_dir / "repo")],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"git clone failed: {result.stderr[:300]}")
+
+        findings, errors = run_all(work_dir / "repo")
+        scan_result = ScanResult(
+            scan_id=scan_id,
+            target=url,
+            scanner="semgrep+gitleaks+osv",
+            findings=findings,
+            error="; ".join(errors) if errors else None,
+        )
+        store.save_scan(scan_result)
+        return scan_result
+    except Exception as e:
+        return ScanResult(
+            scan_id=scan_id,
+            target=url,
             scanner="semgrep+gitleaks+osv",
             findings=[],
             error=str(e)[:300],

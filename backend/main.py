@@ -1,7 +1,12 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routes.findings import router as findings_router
+from routes.reports import router as reports_router
 from routes.scan import router as scan_router
+
+load_dotenv()  # loads backend/.env when present
 
 app = FastAPI(
     title="RepoShield AI",
@@ -17,6 +22,8 @@ app.add_middleware(
 )
 
 app.include_router(scan_router)
+app.include_router(findings_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")
