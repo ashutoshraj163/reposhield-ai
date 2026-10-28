@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Loader2, GitCompare, ShieldCheck, ShieldAlert,
+  Loader2, GitCompare, ShieldCheck,
   AlertTriangle, CheckCircle2, XCircle, RefreshCw,
 } from "lucide-react";
 import { getDiff, verifyPatch } from "../lib/api";

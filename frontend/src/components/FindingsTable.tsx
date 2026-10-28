@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { Finding } from "../lib/api";
 import { SeverityBadge } from "./SeverityBadge";
 import { FindingDrawer } from "./FindingDrawer";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, ArrowLeft, Download, FileJson, FileText, Filter } from "lucide-react";
+import { Shield, ArrowLeft, FileJson, FileText, Filter } from "lucide-react";
 import type { ScanResult } from "./lib/api";
 import { reportUrl } from "./lib/api";
 import { UploadZone } from "./components/UploadZone";
