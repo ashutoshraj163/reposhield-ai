@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
-import { Upload, Shield, Loader2, AlertCircle } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Upload, Shield, Loader2, AlertCircle, Play, Sparkles, Terminal } from "lucide-react";
 import { scanDemo, scanUpload, scanGithub } from "../lib/api";
 import type { ScanResult } from "../lib/api";
+import { CyberShield3D } from "./CyberShield3D";
+import { TiltCard } from "./TiltCard";
 
 function GithubIcon({ size = 15, className = "" }: { size?: number; className?: string }) {
   return (
@@ -12,6 +14,14 @@ function GithubIcon({ size = 15, className = "" }: { size?: number; className?: 
   );
 }
 
+const SCAN_STEPS = [
+  "Initializing sandboxed workspace…",
+  "Running Semgrep AST security rules…",
+  "Analyzing entropy with Gitleaks…",
+  "Cross-referencing OSV vulnerability database…",
+  "Normalizing findings with BharatCode engine…",
+];
+
 interface Props {
   onResult: (result: ScanResult) => void;
 }
@@ -19,9 +29,22 @@ interface Props {
 export function UploadZone({ onResult }: Props) {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Cycle through scanning telemetry when loading
+  useEffect(() => {
+    if (!loading) {
+      setCurrentStep(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % SCAN_STEPS.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   async function handleFile(file: File) {
     setLoading(true);
@@ -72,98 +95,220 @@ export function UploadZone({ onResult }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 px-4">
-      {/* Logo */}
-      <div className="text-center space-y-2">
-        <div className="flex items-center justify-center gap-2">
-          <Shield size={32} className="text-indigo-400" />
-          <h1 className="text-3xl font-bold text-white tracking-tight">RepoShield AI</h1>
-        </div>
-        <p className="text-slate-400 text-sm max-w-sm">
-          Find the flaw. Understand the risk. Fix it with evidence.
-        </p>
-      </div>
+    <div className="relative min-h-screen flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* 3D Cyber Vanishing Perspective Floor Grid */}
+      <div className="cyber-grid-3d" />
 
-      {/* Upload area */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        onClick={() => !loading && inputRef.current?.click()}
-        className={`
-          w-full max-w-lg border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all
-          ${dragging ? "border-indigo-400 bg-indigo-950/30" : "border-slate-600 hover:border-slate-400 bg-slate-800/30 hover:bg-slate-800/50"}
-          ${loading ? "pointer-events-none opacity-60" : ""}
-        `}
-      >
-        {loading ? (
-          <div className="flex flex-col items-center gap-3 text-indigo-400">
-            <Loader2 size={36} className="animate-spin" />
-            <p className="text-sm">Scanning…</p>
+      {/* Volumetric ambient background glow orbs */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+
+      {/* Header bar */}
+      <header className="relative z-10 max-w-7xl mx-auto w-full flex items-center justify-between pb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 glow-cyan">
+            <Shield size={24} className="text-cyan-400" />
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <Upload size={36} className="text-slate-500" />
-            <div>
-              <p className="text-slate-200 font-medium">Drop a file or ZIP here</p>
-              <p className="text-slate-500 text-sm mt-1">Python · JavaScript · TypeScript</p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-black tracking-wider text-white font-mono">RepoShield AI</span>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300">
+                v1.0 MVP
+              </span>
             </div>
-            <p className="text-slate-600 text-xs">or click to browse · max 50 MB</p>
+            <p className="text-xs text-slate-400">Autonomous Code Security Reviewer & Evidence Verifier</p>
           </div>
-        )}
-      </div>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".py,.js,.ts,.tsx,.jsx,.zip"
-        className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-      />
-
-      {/* GitHub URL */}
-      <form onSubmit={handleGithub} className="w-full max-w-lg flex gap-2">
-        <div className="flex-1 flex items-center gap-2 bg-slate-800 border border-slate-600 rounded-xl px-3">
-          <GithubIcon size={15} className="text-slate-500 shrink-0" />
-          <input
-            type="url"
-            placeholder="https://github.com/owner/repo"
-            value={githubUrl}
-            onChange={(e) => setGithubUrl(e.target.value)}
-            disabled={loading}
-            className="flex-1 bg-transparent text-slate-200 placeholder-slate-500 text-sm py-2.5 outline-none"
-          />
         </div>
-        <button
-          type="submit"
-          disabled={loading || !githubUrl.trim()}
-          className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-900 disabled:text-indigo-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-        >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : "Scan"}
-        </button>
-      </form>
 
-      <div className="flex items-center gap-4">
-        <div className="h-px w-16 bg-slate-700" />
-        <span className="text-slate-500 text-sm">or</span>
-        <div className="h-px w-16 bg-slate-700" />
-      </div>
-
-      {/* Demo button */}
-      <button
-        onClick={handleDemo}
-        disabled={loading}
-        className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors border border-slate-600"
-      >
-        <Shield size={15} className="text-indigo-400" />
-        Run demo scan (built-in fixture)
-      </button>
-
-      {error && (
-        <div className="flex items-center gap-2 text-red-400 text-sm bg-red-950 border border-red-800 rounded-lg px-4 py-2.5 max-w-md">
-          <AlertCircle size={15} /> {error}
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 font-mono">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            BharatCode Qwen 3.8-27B
+          </div>
+          <a
+            href="https://github.com/ashutoshraj163/reposhield-ai"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-850 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 transition-colors"
+          >
+            <GithubIcon size={14} /> GitHub
+          </a>
         </div>
-      )}
+      </header>
+
+      {/* Main 3D Hero & Scanner Zone */}
+      <main className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto">
+        {/* Left Column: Interactive 3D Shield Hologram */}
+        <div className="lg:col-span-5 flex flex-col items-center justify-center text-center lg:text-left space-y-6">
+          <div className="w-full max-w-[380px] h-[360px] sm:h-[400px] relative mx-auto">
+            {/* 3D Canvas */}
+            <CyberShield3D state={loading ? "scanning" : "idle"} />
+
+            {/* Hologram Floating HUD Badges */}
+            <div className="absolute top-4 left-0 px-3 py-1 rounded-lg bg-slate-900/80 border border-cyan-500/30 text-[11px] font-mono text-cyan-300 backdrop-blur-md shadow-lg pointer-events-none">
+              SHIELD STATUS: {loading ? "ANALYZING..." : "ONLINE"}
+            </div>
+            <div className="absolute bottom-4 right-0 px-3 py-1 rounded-lg bg-slate-900/80 border border-purple-500/30 text-[11px] font-mono text-purple-300 backdrop-blur-md shadow-lg pointer-events-none">
+              SCAN ENGINES: 3 ACTIVE
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400">
+              Find the flaw. Understand the risk. Fix it with evidence.
+            </h2>
+            <p className="text-slate-400 text-sm max-w-md mx-auto lg:mx-0">
+              Multi-engine static security analysis powered by <strong className="text-slate-200">Semgrep</strong>, <strong className="text-slate-200">Gitleaks</strong>, and <strong className="text-slate-200">OSV</strong>, combined with verifiable AI patches.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column: 3D Control Center & Upload */}
+        <div className="lg:col-span-7 flex flex-col gap-5">
+          <TiltCard glowColor="cyan" maxTilt={5}>
+            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-700/60 shadow-2xl space-y-6 relative overflow-hidden">
+              {/* Scanline pattern */}
+              <div className="scanlines absolute inset-0 opacity-20" />
+
+              {/* Instant Demo Scan Primary Action */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-indigo-950/40 to-slate-900/80 border border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0">
+                    <Sparkles size={20} className="animate-spin" style={{ animationDuration: "8s" }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white font-mono">Vulnerable Test Fixture</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-800/60">
+                        32 Vulnerabilities
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">Test Gitleaks, Semgrep, and OSV scanner outputs instantly.</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleDemo}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-mono text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      Scanning…
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} className="fill-current" />
+                      Run Demo Scan
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Drag & Drop File Zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={onDrop}
+                onClick={() => !loading && inputRef.current?.click()}
+                className={`
+                  relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 group
+                  ${dragging ? "border-cyan-400 bg-cyan-950/40 shadow-[0_0_30px_rgba(6,182,212,0.25)]" : "border-slate-700/80 hover:border-cyan-500/50 bg-slate-900/40 hover:bg-slate-900/80"}
+                  ${loading ? "pointer-events-none opacity-60" : ""}
+                `}
+              >
+                {loading ? (
+                  <div className="flex flex-col items-center gap-3 py-4 text-cyan-400">
+                    <div className="relative">
+                      <Loader2 size={44} className="animate-spin" />
+                      <Shield size={20} className="absolute inset-0 m-auto text-cyan-200" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-mono text-sm font-semibold tracking-wide text-slate-200">{SCAN_STEPS[currentStep]}</p>
+                      <p className="text-xs text-slate-500 font-mono">Running isolated subprocess scanners…</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3 py-2">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-400 group-hover:text-cyan-400 group-hover:border-cyan-500/50 group-hover:scale-110 transition-all duration-300 shadow-lg">
+                      <Upload size={26} />
+                    </div>
+                    <div>
+                      <p className="text-slate-200 font-semibold text-base group-hover:text-cyan-300 transition-colors">
+                        Drop repository ZIP or source file here
+                      </p>
+                      <p className="text-slate-400 text-xs mt-1">
+                        Supports Python (.py), JavaScript (.js), TypeScript (.ts, .tsx), or full .zip archive
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+                      <span>Click to browse</span>
+                      <span>•</span>
+                      <span>Max file size 50MB</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".py,.js,.ts,.tsx,.jsx,.zip"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+              />
+
+              {/* GitHub URL Scan */}
+              <div className="space-y-2">
+                <label className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                  <Terminal size={13} className="text-cyan-400" />
+                  <span>Or scan a public GitHub repository</span>
+                </label>
+                <form onSubmit={handleGithub} className="flex gap-2">
+                  <div className="flex-1 flex items-center gap-2.5 bg-slate-950/80 border border-slate-700/80 focus-within:border-cyan-500/60 rounded-xl px-3.5 transition-colors">
+                    <GithubIcon size={16} className="text-slate-400 shrink-0" />
+                    <input
+                      type="url"
+                      placeholder="https://github.com/owner/repository"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      disabled={loading}
+                      className="flex-1 bg-transparent text-slate-200 placeholder-slate-500 text-sm py-2.5 outline-none font-mono text-xs sm:text-sm"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || !githubUrl.trim()}
+                    className="bg-slate-800 hover:bg-cyan-600 disabled:bg-slate-900 disabled:text-slate-600 border border-slate-700 hover:border-cyan-500 text-white px-5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all duration-200"
+                  >
+                    {loading ? <Loader2 size={14} className="animate-spin" /> : "Clone & Scan"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2.5 text-rose-400 text-xs sm:text-sm bg-rose-950/50 border border-rose-800/80 rounded-xl px-4 py-3">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+            </div>
+          </TiltCard>
+        </div>
+      </main>
+
+      {/* Footer telemetry bar */}
+      <footer className="relative z-10 max-w-7xl mx-auto w-full pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 font-mono gap-3 border-t border-slate-800/60">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span>Engines Active: Semgrep v1.182 · Gitleaks v8.26 · OSV Vulnerability DB</span>
+        </div>
+        <div>
+          BharatCode Build League 2026 Submission
+        </div>
+      </footer>
     </div>
   );
 }
