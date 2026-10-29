@@ -245,7 +245,7 @@ export function UploadZone({ onResult }: Props) {
                     <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
                       <span>Click to browse</span>
                       <span>•</span>
-                      <span>Max file size 50MB</span>
+                      <span>Max file size 250MB</span>
                     </div>
                   </div>
                 )}

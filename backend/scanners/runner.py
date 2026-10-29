@@ -79,4 +79,9 @@ def _find_requirements(target: Path) -> Path | None:
         candidate = target / name
         if candidate.exists():
             return candidate
+    # Also check inside immediate subfolder (typical for GitHub zip downloads)
+    for name in ("requirements.txt", "requirements-dev.txt"):
+        for sub in target.glob(f"*/{name}"):
+            if sub.is_file():
+                return sub
     return None

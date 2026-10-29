@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import uuid
 from pathlib import Path
@@ -7,7 +8,7 @@ from schemas import Finding
 
 _GITLEAKS_BIN = Path(__file__).resolve().parents[1] / ".tools" / "gitleaks"
 
-SCAN_TIMEOUT_SECS = 60
+SCAN_TIMEOUT_SECS = int(os.environ.get("SCAN_TIMEOUT_SECS", "180"))
 
 
 def _gitleaks_bin() -> str:

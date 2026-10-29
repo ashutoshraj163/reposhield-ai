@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import subprocess
@@ -25,7 +26,8 @@ class GithubRequest(BaseModel):
 
 router = APIRouter(prefix="/api/scan", tags=["scan"])
 
-MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "250"))
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 DEMO_DIR = Path(__file__).resolve().parents[2] / "demo"
 
 
@@ -53,25 +55,42 @@ async def scan_upload(file: UploadFile) -> ScanResult:
     Accept a ZIP or single source file. Scan with all enabled scanners.
     Uploaded content is written to a temp directory and never executed.
     """
-    content = await file.read()
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="File too large (max 50 MB)")
-
     scan_id = f"scan-{uuid.uuid4().hex[:8]}"
     work_dir = Path(tempfile.mkdtemp(prefix="reposhield_"))
 
     try:
         filename = file.filename or "upload.py"
+        safe_name = Path(filename).name
 
-        if filename.endswith(".zip"):
+        if safe_name.endswith(".zip"):
             zip_path = work_dir / "upload.zip"
-            zip_path.write_bytes(content)
+            total_bytes = 0
+            with zip_path.open("wb") as buffer:
+                while chunk := await file.read(1024 * 1024):  # 1 MB chunks
+                    total_bytes += len(chunk)
+                    if total_bytes > MAX_UPLOAD_BYTES:
+                        size_mb = total_bytes // (1024 * 1024)
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large ({size_mb} MB). Maximum upload size is {MAX_UPLOAD_MB} MB.",
+                        )
+                    buffer.write(chunk)
+
             target = work_dir / "extracted"
             _safe_extract(zip_path, target)
         else:
-            safe_name = Path(filename).name
             target = work_dir / safe_name
-            target.write_bytes(content)
+            total_bytes = 0
+            with target.open("wb") as buffer:
+                while chunk := await file.read(1024 * 1024):
+                    total_bytes += len(chunk)
+                    if total_bytes > MAX_UPLOAD_BYTES:
+                        size_mb = total_bytes // (1024 * 1024)
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"File too large ({size_mb} MB). Maximum upload size is {MAX_UPLOAD_MB} MB.",
+                        )
+                    buffer.write(chunk)
 
         findings, errors = run_all(target)
         result = ScanResult(
@@ -83,6 +102,8 @@ async def scan_upload(file: UploadFile) -> ScanResult:
         )
         store.save_scan(result)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         return ScanResult(
             scan_id=scan_id,

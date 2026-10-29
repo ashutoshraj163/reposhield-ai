@@ -16,8 +16,8 @@ SEVERITY_MAP = {
     "CRITICAL": "critical",
 }
 
-MAX_FILE_SIZE_MB = 5
-SCAN_TIMEOUT_SECS = 60
+MAX_FILE_SIZE_MB = int(os.environ.get("MAX_FILE_SIZE_MB", "25"))
+SCAN_TIMEOUT_SECS = int(os.environ.get("SCAN_TIMEOUT_SECS", "180"))
 
 
 def _semgrep_bin() -> str:
@@ -47,6 +47,14 @@ def scan_path(target: Path, config: str = "p/python") -> list[Finding]:
         "--timeout", str(SCAN_TIMEOUT_SECS),
         "--max-target-bytes", str(MAX_FILE_SIZE_MB * 1024 * 1024),
         "--no-git-ignore",
+        "--exclude", "node_modules",
+        "--exclude", "dist",
+        "--exclude", "build",
+        "--exclude", ".git",
+        "--exclude", "vendor",
+        "--exclude", "*.min.js",
+        "--exclude", "*.bundle.js",
+        "--exclude", "*lock*",
         str(target),
     ]
 

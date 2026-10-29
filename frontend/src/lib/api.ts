@@ -44,18 +44,32 @@ export interface AIExplanation {
   fallback: boolean;
 }
 
+async function handleResponse<T>(res: Response, fallbackAction: string): Promise<T> {
+  if (!res.ok) {
+    let errorDetail = res.statusText;
+    try {
+      const data = await res.json();
+      if (data && data.detail) {
+        errorDetail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+      }
+    } catch {
+      // Keep statusText if not json
+    }
+    throw new Error(`${fallbackAction}: ${errorDetail}`);
+  }
+  return res.json();
+}
+
 export async function scanDemo(): Promise<ScanResult> {
   const res = await fetch(`${BASE}/scan/demo`);
-  if (!res.ok) throw new Error(`Scan failed: ${res.statusText}`);
-  return res.json();
+  return handleResponse<ScanResult>(res, "Scan failed");
 }
 
 export async function scanUpload(file: File): Promise<ScanResult> {
   const form = new FormData();
   form.append("file", file);
   const res = await fetch(`${BASE}/scan/upload`, { method: "POST", body: form });
-  if (!res.ok) throw new Error(`Upload failed: ${res.statusText}`);
-  return res.json();
+  return handleResponse<ScanResult>(res, "Upload failed");
 }
 
 export async function scanGithub(url: string): Promise<ScanResult> {
@@ -64,8 +78,7 @@ export async function scanGithub(url: string): Promise<ScanResult> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   });
-  if (!res.ok) throw new Error(`GitHub scan failed: ${res.statusText}`);
-  return res.json();
+  return handleResponse<ScanResult>(res, "GitHub scan failed");
 }
 
 export async function explainFinding(findingId: string): Promise<AIExplanation> {
